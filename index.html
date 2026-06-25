@@ -1,0 +1,372 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Secret Messenger</title>
+
+<style>
+*{
+    margin:0;
+    padding:0;
+    box-sizing:border-box;
+}
+
+html{
+    scroll-behavior:smooth;
+}
+
+body{
+    font-family:Arial,sans-serif;
+    background:linear-gradient(135deg,#020617,#0f172a,#1e1b4b);
+    color:white;
+    overflow-x:hidden;
+}
+
+/* PARTICLES */
+.particle{
+    position:fixed;
+    border-radius:50%;
+    background:rgba(139,92,246,0.25);
+    animation:floatParticle linear infinite;
+    z-index:-1;
+}
+
+.p1{width:80px;height:80px;left:10%;top:80%;animation-duration:15s;}
+.p2{width:120px;height:120px;left:70%;top:90%;animation-duration:20s;}
+.p3{width:60px;height:60px;left:40%;top:85%;animation-duration:12s;}
+
+@keyframes floatParticle{
+    from{transform:translateY(0);}
+    to{transform:translateY(-120vh);}
+}
+
+header{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    padding:22px 60px;
+    position:sticky;
+    top:0;
+    z-index:1000;
+    backdrop-filter:blur(14px);
+    background:rgba(15,23,42,0.6);
+    border-bottom:1px solid rgba(255,255,255,0.08);
+}
+
+.logo-box{
+    display:flex;
+    align-items:center;
+    gap:14px;
+}
+
+.logo-box img{
+    width:58px;
+    height:58px;
+    border-radius:16px;
+}
+
+.logo-box h2{
+    font-size:28px;
+}
+
+.highlight{
+    color:#8b5cf6;
+}
+
+.download-btn,.main-btn{
+    background:linear-gradient(135deg,#7c3aed,#9333ea);
+    color:white;
+    text-decoration:none;
+    padding:16px 32px;
+    border-radius:14px;
+    font-weight:bold;
+    box-shadow:0 0 25px rgba(139,92,246,.55);
+    transition:.35s;
+}
+
+.download-btn:hover,.main-btn:hover{
+    transform:translateY(-5px) scale(1.04);
+    box-shadow:0 0 40px rgba(139,92,246,.8);
+}
+
+.hero{
+    min-height:100vh;
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    padding:60px;
+    gap:40px;
+}
+
+.hero-content{
+    max-width:650px;
+}
+
+.hero h1{
+    font-size:76px;
+    line-height:1.15;
+    margin-bottom:24px;
+}
+
+.hero p{
+    font-size:22px;
+    color:#cbd5e1;
+    line-height:1.7;
+    margin-bottom:36px;
+}
+
+/* PHONE FRAME */
+.phone-frame{
+    width:320px;
+    background:#111827;
+    border:8px solid #222;
+    border-radius:42px;
+    padding:14px;
+    box-shadow:0 0 40px rgba(139,92,246,.35);
+    position:relative;
+    animation:floatPhone 4s ease-in-out infinite;
+}
+
+.phone-frame::before{
+    content:"";
+    position:absolute;
+    width:90px;
+    height:18px;
+    background:black;
+    top:8px;
+    left:50%;
+    transform:translateX(-50%);
+    border-radius:12px;
+}
+
+.phone-frame img{
+    width:100%;
+    border-radius:28px;
+    margin-top:18px;
+}
+
+@keyframes floatPhone{
+    0%,100%{transform:translateY(0);}
+    50%{transform:translateY(-15px);}
+}
+
+.features,.screenshots{
+    padding:80px 60px;
+}
+
+.section-title{
+    text-align:center;
+    font-size:52px;
+    margin-bottom:50px;
+}
+
+.cards{
+    display:grid;
+    grid-template-columns:repeat(auto-fit,minmax(260px,1fr));
+    gap:25px;
+}
+
+.card,.shot-card{
+    background:rgba(255,255,255,0.05);
+    border:1px solid rgba(255,255,255,0.08);
+    backdrop-filter:blur(12px);
+    padding:32px;
+    border-radius:24px;
+    transition:.35s;
+}
+
+.card:hover,.shot-card:hover{
+    transform:translateY(-10px);
+    box-shadow:0 0 35px rgba(139,92,246,.35);
+}
+
+.card h3,.shot-card h3{
+    color:#a78bfa;
+    margin-bottom:16px;
+}
+
+.card p,.shot-card p{
+    color:#cbd5e1;
+    line-height:1.7;
+}
+
+.shot-grid{
+    display:grid;
+    grid-template-columns:repeat(auto-fit,minmax(320px,1fr));
+    gap:40px;
+}
+
+.shot-card img{
+    width:100%;
+    max-width:250px;
+    border-radius:30px;
+    margin-bottom:20px;
+}
+
+.cta{
+    text-align:center;
+    padding:80px 30px;
+}
+
+.cta h2{
+    font-size:50px;
+    margin-bottom:30px;
+}
+
+footer{
+    text-align:center;
+    padding:30px;
+    color:#94a3b8;
+}
+
+/* SCROLL ANIMATION */
+.reveal{
+    opacity:0;
+    transform:translateY(50px);
+    transition:all 1s ease;
+}
+
+.reveal.active{
+    opacity:1;
+    transform:translateY(0);
+}
+
+@media(max-width:900px){
+    header{
+        flex-direction:column;
+        gap:20px;
+        padding:20px;
+    }
+
+    .hero{
+        flex-direction:column;
+        text-align:center;
+        padding:40px 20px;
+    }
+
+    .hero h1{
+        font-size:44px;
+    }
+
+    .hero p{
+        font-size:18px;
+    }
+
+    .section-title{
+        font-size:36px;
+    }
+
+    .cta h2{
+        font-size:34px;
+    }
+
+    .phone-frame{
+        width:280px;
+    }
+}
+</style>
+</head>
+<body>
+
+<div class="particle p1"></div>
+<div class="particle p2"></div>
+<div class="particle p3"></div>
+
+<header>
+    <div class="logo-box">
+        <img src="logo.png" alt="Logo">
+        <h2>Secret <span class="highlight">Messenger</span></h2>
+    </div>
+
+    <a href="secret-messenger.apk" download class="download-btn">
+        Download App
+    </a>
+</header>
+
+<section class="hero reveal">
+    <div class="hero-content">
+        <h1>Secure. Private.<br><span class="highlight">Just for You.</span></h1>
+        <p>
+            Secret Messenger protects your conversations using
+            secure encryption and hidden messaging.
+        </p>
+        <a href="secret-messenger.apk" download class="main-btn">
+            Download Now
+        </a>
+    </div>
+
+    <div class="phone-frame">
+        <img src="encrypt.png" alt="Encryption">
+    </div>
+</section>
+
+<section class="features reveal">
+    <h2 class="section-title">Why Choose <span class="highlight">Secret Messenger?</span></h2>
+
+    <div class="cards">
+        <div class="card">
+            <h3>🔒 End-to-End Encryption</h3>
+            <p>Messages are encrypted securely before sending.</p>
+        </div>
+
+        <div class="card">
+            <h3>🕶 Privacy First</h3>
+            <p>Your conversations stay private and protected.</p>
+        </div>
+
+        <div class="card">
+            <h3>⚡ Fast Messaging</h3>
+            <p>Send and receive secure messages instantly.</p>
+        </div>
+    </div>
+</section>
+
+<section class="screenshots reveal">
+    <h2 class="section-title">App <span class="highlight">Screenshots</span></h2>
+
+    <div class="shot-grid">
+        <div class="shot-card">
+            <img src="encrypt.png">
+            <h3>Encrypt Messages</h3>
+            <p>Convert plain text into encrypted secure messages.</p>
+        </div>
+
+        <div class="shot-card">
+            <img src="decrypt.png">
+            <h3>Decrypt Messages</h3>
+            <p>Decode secret encrypted text safely using your key.</p>
+        </div>
+    </div>
+</section>
+
+<section class="cta reveal">
+    <h2>Your Privacy Matters</h2>
+    <a href="secret-messenger.apk" download class="main-btn">
+        Download Secret Messenger
+    </a>
+</section>
+
+<footer>
+    © 2026 Secret Messenger. All rights reserved.
+</footer>
+
+<script>
+function reveal(){
+    const reveals=document.querySelectorAll(".reveal");
+    for(let i=0;i<reveals.length;i++){
+        let windowHeight=window.innerHeight;
+        let top=reveals[i].getBoundingClientRect().top;
+        let visible=100;
+
+        if(top < windowHeight-visible){
+            reveals[i].classList.add("active");
+        }
+    }
+}
+window.addEventListener("scroll",reveal);
+reveal();
+</script>
+
+</body>
+</html>
