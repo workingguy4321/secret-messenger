@@ -1,372 +1,878 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme="light">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Secret Messenger</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FormatShift - Browser Converter</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- External Libraries -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js"></script>
+    <script src="https://unpkg.com/docx@8.2.3/build/index.js"></script>
+    <script src="https://unpkg.com/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    
+    <!-- Google AdSense -->
+    <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-5117802113223712" crossorigin="anonymous"></script>
 
-<style>
-*{
-    margin:0;
-    padding:0;
-    box-sizing:border-box;
-}
+    <!-- Cropper.js for Image Cropping and Tilting -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.css" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.js"></script>
 
-html{
-    scroll-behavior:smooth;
-}
+    <style>
+        :root[data-theme="light"] {
+            --bg-color: #f1f5f9;
+            --card-bg: rgba(255, 255, 255, 0.85);
+            --primary: #3b82f6;
+            --primary-hover: #2563eb;
+            --text-main: #0f172a;
+            --text-muted: #475569;
+            --glass-border: rgba(0, 0, 0, 0.1);
+            --blob-1: #93c5fd;
+            --blob-2: #f9a8d4;
+            --input-bg: #ffffff;
+            --input-border: #cbd5e1;
+        }
 
-body{
-    font-family:Arial,sans-serif;
-    background:linear-gradient(135deg,#020617,#0f172a,#1e1b4b);
-    color:white;
-    overflow-x:hidden;
-}
+        :root[data-theme="dark"] {
+            --bg-color: #0f172a;
+            --card-bg: rgba(30, 41, 59, 0.85);
+            --primary: #60a5fa;
+            --primary-hover: #3b82f6;
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+            --glass-border: rgba(255, 255, 255, 0.1);
+            --blob-1: #1e3a8a;
+            --blob-2: #831843;
+            --input-bg: #1e293b;
+            --input-border: #475569;
+        }
 
-/* PARTICLES */
-.particle{
-    position:fixed;
-    border-radius:50%;
-    background:rgba(139,92,246,0.25);
-    animation:floatParticle linear infinite;
-    z-index:-1;
-}
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Inter', sans-serif; transition: background-color 0.3s, color 0.3s; }
 
-.p1{width:80px;height:80px;left:10%;top:80%;animation-duration:15s;}
-.p2{width:120px;height:120px;left:70%;top:90%;animation-duration:20s;}
-.p3{width:60px;height:60px;left:40%;top:85%;animation-duration:12s;}
+        body {
+            background-color: var(--bg-color); color: var(--text-main);
+            min-height: 100vh; display: flex; justify-content: center; align-items: center;
+            overflow: hidden; position: relative;
+        }
 
-@keyframes floatParticle{
-    from{transform:translateY(0);}
-    to{transform:translateY(-120vh);}
-}
+        /* Theme Toggle */
+        .theme-toggle {
+            position: absolute; top: 20px; right: 20px; z-index: 10;
+            background: var(--card-bg); border: 1px solid var(--glass-border);
+            border-radius: 50%; width: 48px; height: 48px;
+            cursor: pointer; display: flex; justify-content: center; align-items: center;
+            color: var(--text-main); backdrop-filter: blur(10px);
+        }
+        .theme-toggle svg { width: 24px; height: 24px; }
 
-header{
-    display:flex;
-    justify-content:space-between;
-    align-items:center;
-    padding:22px 60px;
-    position:sticky;
-    top:0;
-    z-index:1000;
-    backdrop-filter:blur(14px);
-    background:rgba(15,23,42,0.6);
-    border-bottom:1px solid rgba(255,255,255,0.08);
-}
+        /* Background Blobs */
+        .background-blobs { position: absolute; top: 0; left: 0; width: 100%; height: 100%; overflow: hidden; z-index: 0; filter: blur(100px); opacity: 0.6; pointer-events: none;}
+        .blob { position: absolute; border-radius: 50%; animation: float 20s infinite alternate; }
+        .blob-1 { width: 400px; height: 400px; background: var(--blob-1); top: -100px; left: 10%; }
+        .blob-2 { width: 300px; height: 300px; background: var(--blob-2); bottom: -50px; right: 10%; animation-delay: -10s; }
+        @keyframes float { 0% { transform: translate(0, 0) scale(1); } 100% { transform: translate(100px, 50px) scale(1.2); } }
 
-.logo-box{
-    display:flex;
-    align-items:center;
-    gap:14px;
-}
+        /* Container */
+        .container {
+            background: var(--card-bg); backdrop-filter: blur(16px);
+            border: 1px solid var(--glass-border); border-radius: 24px;
+            padding: 40px; width: 95%; max-width: 900px; z-index: 1;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.2);
+            display: flex; flex-direction: column; gap: 32px;
+            max-height: 90vh; overflow-y: auto;
+        }
 
-.logo-box img{
-    width:58px;
-    height:58px;
-    border-radius:16px;
-}
+        .container::-webkit-scrollbar { width: 8px; }
+        .container::-webkit-scrollbar-track { background: transparent; }
+        .container::-webkit-scrollbar-thumb { background: var(--text-muted); border-radius: 4px; }
 
-.logo-box h2{
-    font-size:28px;
-}
+        header { text-align: center; }
+        header h1 { font-size: 2.5rem; font-weight: 700; margin-bottom: 8px; }
+        .highlight { background: linear-gradient(135deg, #2563eb, #9333ea); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        header p { color: var(--text-muted); font-size: 1.1rem; }
 
-.highlight{
-    color:#8b5cf6;
-}
+        /* Selection Grid */
+        .tools-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 16px; }
+        .tool-card {
+            background: rgba(128, 128, 128, 0.05); border: 1px solid var(--glass-border);
+            border-radius: 16px; padding: 20px 16px; text-align: center; cursor: pointer;
+            display: flex; flex-direction: column; gap: 12px; align-items: center;
+        }
+        .tool-card:hover { border-color: var(--primary); transform: translateY(-3px); box-shadow: 0 10px 20px -10px rgba(59, 130, 246, 0.2); }
+        .tool-card svg { width: 32px; height: 32px; color: var(--primary); }
+        .tool-card h3 { font-size: 1rem; font-weight: 600; }
+        .tool-card p { font-size: 0.8rem; color: var(--text-muted); }
 
-.download-btn,.main-btn{
-    background:linear-gradient(135deg,#7c3aed,#9333ea);
-    color:white;
-    text-decoration:none;
-    padding:16px 32px;
-    border-radius:14px;
-    font-weight:bold;
-    box-shadow:0 0 25px rgba(139,92,246,.55);
-    transition:.35s;
-}
+        /* Upload Screen */
+        .upload-screen { display: none; animation: fadeIn 0.3s ease-out; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
 
-.download-btn:hover,.main-btn:hover{
-    transform:translateY(-5px) scale(1.04);
-    box-shadow:0 0 40px rgba(139,92,246,.8);
-}
+        .back-btn {
+            background: none; border: none; color: var(--text-muted); cursor: pointer;
+            font-size: 1rem; display: flex; align-items: center; gap: 8px; margin-bottom: 20px; font-weight: 600;
+        }
+        .back-btn:hover { color: var(--text-main); }
+        .selected-tool-title { font-size: 1.5rem; text-align: center; margin-bottom: 24px; color: var(--primary); }
 
-.hero{
-    min-height:100vh;
-    display:flex;
-    justify-content:space-between;
-    align-items:center;
-    padding:60px;
-    gap:40px;
-}
+        .upload-area {
+            border: 2px dashed var(--input-border); border-radius: 16px; padding: 40px 20px;
+            text-align: center; cursor: pointer; background: rgba(128, 128, 128, 0.05);
+        }
+        .upload-area:hover, .upload-area.dragover { border-color: var(--primary); background: rgba(59, 130, 246, 0.05); }
+        .upload-icon { width: 48px; height: 48px; color: var(--primary); margin-bottom: 16px; transition: transform 0.3s ease; }
+        .upload-area:hover .upload-icon { transform: translateY(-5px); }
+        .file-name { margin-top: 12px; font-size: 0.95rem; color: var(--primary); font-weight: 600; word-break: break-all; }
 
-.hero-content{
-    max-width:650px;
-}
+        /* Dynamic Settings Area */
+        .settings-area {
+            background: rgba(128, 128, 128, 0.05); border: 1px solid var(--glass-border);
+            padding: 16px; border-radius: 12px; margin-top: 24px; display: none; text-align: center;
+        }
+        .settings-area h4 { margin-bottom: 12px; color: var(--text-main); }
+        .settings-area input {
+            background: var(--input-bg); color: var(--text-main); border: 1px solid var(--input-border);
+            padding: 10px 14px; border-radius: 8px; font-size: 1rem; outline: none; width: 100%; max-width: 250px; margin: 4px;
+        }
+        .settings-area input:focus { border-color: var(--primary); }
 
-.hero h1{
-    font-size:76px;
-    line-height:1.15;
-    margin-bottom:24px;
-}
+        /* Convert Button */
+        .convert-btn {
+            background: linear-gradient(135deg, var(--primary), #6366f1);
+            color: white; border: none; padding: 16px; border-radius: 12px;
+            font-size: 1.1rem; font-weight: 600; cursor: pointer; margin-top: 24px;
+            display: flex; justify-content: center; align-items: center; gap: 10px; width: 100%;
+        }
+        .convert-btn:hover { box-shadow: 0 10px 20px -10px rgba(59, 130, 246, 0.5); }
+        .convert-btn:disabled { opacity: 0.7; cursor: not-allowed; }
 
-.hero p{
-    font-size:22px;
-    color:#cbd5e1;
-    line-height:1.7;
-    margin-bottom:36px;
-}
+        .loader {
+            width: 20px; height: 20px; border: 3px solid rgba(255,255,255,0.3); border-radius: 50%;
+            border-top-color: white; animation: spin 1s infinite linear; display: none;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
 
-/* PHONE FRAME */
-.phone-frame{
-    width:320px;
-    background:#111827;
-    border:8px solid #222;
-    border-radius:42px;
-    padding:14px;
-    box-shadow:0 0 40px rgba(139,92,246,.35);
-    position:relative;
-    animation:floatPhone 4s ease-in-out infinite;
-}
+        .status-message { text-align: center; font-size: 0.95rem; min-height: 24px; margin-top: 16px; font-weight: 600;}
+        .status-success { color: #10b981; }
+        .status-error { color: #ef4444; }
 
-.phone-frame::before{
-    content:"";
-    position:absolute;
-    width:90px;
-    height:18px;
-    background:black;
-    top:8px;
-    left:50%;
-    transform:translateX(-50%);
-    border-radius:12px;
-}
+        /* Preview Gallery */
+        .preview-gallery-container { display: none; margin-top: 24px; border-top: 1px solid var(--glass-border); padding-top: 24px; }
+        .preview-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
+        .download-all-btn { background: var(--primary); color: white; border: none; padding: 10px 16px; border-radius: 8px; font-weight: 600; cursor: pointer; }
+        .gallery-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 16px; }
+        .gallery-item { background: var(--input-bg); border-radius: 8px; padding: 8px; border: 1px solid var(--glass-border); display: flex; flex-direction: column; gap: 8px; align-items: center; }
+        .gallery-item img { width: 100%; height: auto; border-radius: 4px; object-fit: contain; }
+        .gallery-item button { background: var(--bg-color); color: var(--text-main); border: 1px solid var(--input-border); padding: 8px; border-radius: 6px; cursor: pointer; width: 100%; }
 
-.phone-frame img{
-    width:100%;
-    border-radius:28px;
-    margin-top:18px;
-}
+        /* Cropper Modal */
+        .cropper-modal {
+            display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.85); z-index: 1000; justify-content: center; align-items: center;
+        }
+        .cropper-content {
+            background: var(--bg-color); padding: 24px; border-radius: 16px; border: 1px solid var(--glass-border);
+            width: 95%; max-width: 800px; max-height: 95vh; display: flex; flex-direction: column; gap: 16px;
+        }
+        .cropper-content h3 { color: var(--text-main); text-align: center; }
+        .cropper-container {
+            width: 100%; height: 60vh; background: #e2e8f0; display: flex; justify-content: center; align-items: center; overflow: hidden; border-radius: 8px;
+        }
+        .cropper-container img { max-width: 100%; max-height: 100%; }
+        .cropper-controls { display: flex; justify-content: center; gap: 16px; margin-top: 8px; }
+        .cropper-controls button {
+            background: var(--input-bg); color: var(--text-main); border: 1px solid var(--input-border);
+            padding: 10px 16px; border-radius: 8px; cursor: pointer; font-weight: 500;
+        }
+        .cropper-controls button:hover { background: rgba(128,128,128,0.1); }
+        .cropper-actions { display: flex; justify-content: space-between; gap: 16px; margin-top: 16px; }
+        .btn-cancel { background: #ef4444; color: white; border: none; padding: 12px 24px; border-radius: 8px; cursor: pointer; font-weight: bold; width: 100%; }
+        .btn-confirm { background: var(--primary); color: white; border: none; padding: 12px 24px; border-radius: 8px; cursor: pointer; font-weight: bold; width: 100%; }
 
-@keyframes floatPhone{
-    0%,100%{transform:translateY(0);}
-    50%{transform:translateY(-15px);}
-}
+        /* Advertisement Containers */
+        .ad-container {
+            width: 100%; max-width: 728px; margin: 16px auto; min-height: 90px;
+            display: flex; justify-content: center; align-items: center;
+        }
 
-.features,.screenshots{
-    padding:80px 60px;
-}
-
-.section-title{
-    text-align:center;
-    font-size:52px;
-    margin-bottom:50px;
-}
-
-.cards{
-    display:grid;
-    grid-template-columns:repeat(auto-fit,minmax(260px,1fr));
-    gap:25px;
-}
-
-.card,.shot-card{
-    background:rgba(255,255,255,0.05);
-    border:1px solid rgba(255,255,255,0.08);
-    backdrop-filter:blur(12px);
-    padding:32px;
-    border-radius:24px;
-    transition:.35s;
-}
-
-.card:hover,.shot-card:hover{
-    transform:translateY(-10px);
-    box-shadow:0 0 35px rgba(139,92,246,.35);
-}
-
-.card h3,.shot-card h3{
-    color:#a78bfa;
-    margin-bottom:16px;
-}
-
-.card p,.shot-card p{
-    color:#cbd5e1;
-    line-height:1.7;
-}
-
-.shot-grid{
-    display:grid;
-    grid-template-columns:repeat(auto-fit,minmax(320px,1fr));
-    gap:40px;
-}
-
-.shot-card img{
-    width:100%;
-    max-width:250px;
-    border-radius:30px;
-    margin-bottom:20px;
-}
-
-.cta{
-    text-align:center;
-    padding:80px 30px;
-}
-
-.cta h2{
-    font-size:50px;
-    margin-bottom:30px;
-}
-
-footer{
-    text-align:center;
-    padding:30px;
-    color:#94a3b8;
-}
-
-/* SCROLL ANIMATION */
-.reveal{
-    opacity:0;
-    transform:translateY(50px);
-    transition:all 1s ease;
-}
-
-.reveal.active{
-    opacity:1;
-    transform:translateY(0);
-}
-
-@media(max-width:900px){
-    header{
-        flex-direction:column;
-        gap:20px;
-        padding:20px;
-    }
-
-    .hero{
-        flex-direction:column;
-        text-align:center;
-        padding:40px 20px;
-    }
-
-    .hero h1{
-        font-size:44px;
-    }
-
-    .hero p{
-        font-size:18px;
-    }
-
-    .section-title{
-        font-size:36px;
-    }
-
-    .cta h2{
-        font-size:34px;
-    }
-
-    .phone-frame{
-        width:280px;
-    }
-}
-</style>
+    </style>
 </head>
 <body>
+    <button class="theme-toggle" id="themeToggle" title="Toggle Dark/Light Mode">
+        <svg id="moonIcon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="display:none;"><path stroke-linecap="round" stroke-linejoin="round" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"/></svg>
+        <svg id="sunIcon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"/></svg>
+    </button>
 
-<div class="particle p1"></div>
-<div class="particle p2"></div>
-<div class="particle p3"></div>
-
-<header>
-    <div class="logo-box">
-        <img src="logo.png" alt="Logo">
-        <h2>Secret <span class="highlight">Messenger</span></h2>
+    <div class="background-blobs">
+        <div class="blob blob-1"></div>
+        <div class="blob blob-2"></div>
     </div>
 
-    <a href="secret-messenger.apk" download class="download-btn">
-        Download App
-    </a>
-</header>
-
-<section class="hero reveal">
-    <div class="hero-content">
-        <h1>Secure. Private.<br><span class="highlight">Just for You.</span></h1>
-        <p>
-            Secret Messenger protects your conversations using
-            secure encryption and hidden messaging.
-        </p>
-        <a href="secret-messenger.apk" download class="main-btn">
-            Download Now
-        </a>
-    </div>
-
-    <div class="phone-frame">
-        <img src="encrypt.png" alt="Encryption">
-    </div>
-</section>
-
-<section class="features reveal">
-    <h2 class="section-title">Why Choose <span class="highlight">Secret Messenger?</span></h2>
-
-    <div class="cards">
-        <div class="card">
-            <h3>🔒 End-to-End Encryption</h3>
-            <p>Messages are encrypted securely before sending.</p>
-        </div>
-
-        <div class="card">
-            <h3>🕶 Privacy First</h3>
-            <p>Your conversations stay private and protected.</p>
-        </div>
-
-        <div class="card">
-            <h3>⚡ Fast Messaging</h3>
-            <p>Send and receive secure messages instantly.</p>
+    <!-- Cropper Modal -->
+    <div class="cropper-modal" id="cropperModal">
+        <div class="cropper-content">
+            <h3 id="cropperTitle">Crop & Tilt Image for PDF</h3>
+            <div class="cropper-container">
+                <img id="cropperImage" src="" alt="To Crop">
+            </div>
+            <div class="cropper-controls">
+                <button id="rotateLeftBtn">↺ Rotate Left (-90°)</button>
+                <button id="rotateRightBtn">↻ Rotate Right (90°)</button>
+            </div>
+            <div class="cropper-actions">
+                <button class="btn-cancel" id="cancelCropBtn">Cancel</button>
+                <button class="btn-confirm" id="confirmCropBtn">Crop & Convert</button>
+            </div>
         </div>
     </div>
-</section>
 
-<section class="screenshots reveal">
-    <h2 class="section-title">App <span class="highlight">Screenshots</span></h2>
+    <div class="container">
+        <header>
+            <h1>Format<span class="highlight">Shift</span></h1>
+            <p>Select a tool to process your files locally.</p>
+        </header>
 
-    <div class="shot-grid">
-        <div class="shot-card">
-            <img src="encrypt.png">
-            <h3>Encrypt Messages</h3>
-            <p>Convert plain text into encrypted secure messages.</p>
+        <!-- Top Ad Space -->
+        <div class="ad-container" id="topAdSpace">
+            <!-- Paste your Google AdSense <ins> and <script> tags right below this line: -->
+            
         </div>
 
-        <div class="shot-card">
-            <img src="decrypt.png">
-            <h3>Decrypt Messages</h3>
-            <p>Decode secret encrypted text safely using your key.</p>
-        </div>
+        <main>
+            <!-- Selection Screen -->
+            <div class="tools-grid" id="selectionScreen">
+                
+                <div class="tool-card" onclick="selectTool('compress_img', 'Compress Image', '.jpg,.jpeg,.png', true)">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+                    <h3>Compress Image</h3><p>Shrink file size (KB)</p>
+                </div>
+
+                <div class="tool-card" onclick="selectTool('img2pdf', 'Image to PDF', '.jpg,.jpeg,.png', true)">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"/></svg>
+                    <h3>Image to PDF</h3><p>Crop, tilt, & convert</p>
+                </div>
+
+                <div class="tool-card" onclick="selectTool('merge_pdf', 'Merge PDFs', '.pdf', true)">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M8 7v8a2 2 0 002 2h6M8 7V5a2 2 0 012-2h4.586a1 1 0 01.707.293l4.414 4.414a1 1 0 01.293.707V15a2 2 0 01-2 2h-2M8 7H6a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2v-2"/></svg>
+                    <h3>Merge PDFs</h3><p>Combine multiple PDFs</p>
+                </div>
+
+                <div class="tool-card" onclick="selectTool('split_pdf', 'Split PDF', '.pdf', false)">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M14 5l7 7m0 0l-7 7m7-7H3"/></svg>
+                    <h3>Split PDF</h3><p>Extract specific pages</p>
+                </div>
+
+                <div class="tool-card" onclick="selectTool('watermark', 'Watermark', '.jpg,.jpeg,.png,.pdf', true)">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"/></svg>
+                    <h3>Add Watermark</h3><p>Stamp text on files</p>
+                </div>
+
+                <div class="tool-card" onclick="selectTool('compress_pdf', 'Compress PDF', '.pdf', true)">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                    <h3>Compress PDF</h3><p>Basic PDF reduction</p>
+                </div>
+
+                <div class="tool-card" onclick="selectTool('pdf2img', 'PDF to Image', '.pdf', true)">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+                    <h3>PDF to Image</h3><p>Preview and convert to PNG</p>
+                </div>
+
+                <div class="tool-card" onclick="selectTool('pdf2docx', 'PDF to Word', '.pdf', true)">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                    <h3>PDF to Word</h3><p>Extract text into DOCX</p>
+                </div>
+                
+                <div class="tool-card" onclick="selectTool('docx2txt', 'Word to Text', '.docx', true)">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                    <h3>Word to Text</h3><p>Extract DOCX to TXT</p>
+                </div>
+
+                <div class="tool-card" onclick="selectTool('txt2docx', 'Text to Word', '.txt', true)">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
+                    <h3>Text to Word</h3><p>Convert TXT to DOCX</p>
+                </div>
+                
+                <div class="tool-card" onclick="selectTool('img2png', 'Image to PNG', '.jpg,.jpeg', true)">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+                    <h3>Image to PNG</h3><p>Convert JPG to PNG</p>
+                </div>
+            </div>
+
+            <!-- Upload Screen -->
+            <div class="upload-screen" id="uploadScreen">
+                <button class="back-btn" onclick="goBack()">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="20" height="20"><path stroke-linecap="round" stroke-linejoin="round" d="M10 19l-7-7m0 0l7-7m-7 7h18"/></svg>
+                    Back to options
+                </button>
+                
+                <h2 class="selected-tool-title" id="selectedToolTitle">Tool Name</h2>
+
+                <div class="upload-area" id="uploadArea">
+                    <input type="file" id="fileInput" hidden multiple>
+                    <div class="upload-content">
+                        <svg class="upload-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/>
+                        </svg>
+                        <h3>Drag & Drop your <span id="acceptedExt">file</span> here</h3>
+                        <p class="file-name" id="fileName"></p>
+                    </div>
+                </div>
+
+                <!-- Dynamic Settings Areas -->
+                <div class="settings-area" id="compressSettings">
+                    <h4>Target Size</h4>
+                    <p id="currentSizeText" style="font-size:0.9rem; margin-bottom:8px;"></p>
+                    <input type="number" id="targetSizeInput" placeholder="Target size in KB (e.g. 500)">
+                </div>
+
+                <div class="settings-area" id="watermarkSettings">
+                    <h4>Watermark Text</h4>
+                    <input type="text" id="watermarkTextInput" placeholder="e.g. CONFIDENTIAL">
+                </div>
+
+                <div class="settings-area" id="splitSettings">
+                    <h4>Pages to Extract</h4>
+                    <p style="font-size:0.8rem; margin-bottom:8px;">e.g., "1-3, 5, 7-10"</p>
+                    <input type="text" id="splitRangeInput" placeholder="e.g. 1-3">
+                </div>
+
+                <button class="convert-btn" id="convertBtn" style="display:none;">
+                    <span class="btn-text" id="convertBtnText">Convert Now</span>
+                    <div class="loader" id="btnLoader"></div>
+                </button>
+                
+                <div class="status-message" id="statusMessage"></div>
+                
+                <!-- Preview Gallery for PDF2Img -->
+                <div class="preview-gallery-container" id="previewGalleryContainer">
+                    <div class="preview-header">
+                        <h3>Preview Gallery</h3>
+                        <button class="download-all-btn" id="downloadAllBtn" style="display:none;">Download All Pages</button>
+                    </div>
+                    <div class="gallery-grid" id="galleryGrid"></div>
+                </div>
+
+                <!-- Bottom Ad Space (Upload Screen) -->
+                <div class="ad-container" id="bottomAdSpace" style="margin-top: 32px;">
+                    <!-- Paste your Google AdSense <ins> and <script> tags right below this line: -->
+                    
+                </div>
+            </div>
+
+        </main>
+
+        <!-- Publisher Content (SEO & AdSense requirement) -->
+        <section class="seo-content" style="margin-top: 48px; padding-top: 32px; border-top: 1px solid var(--glass-border); text-align: left;">
+            <h2>About FormatShift</h2>
+            <p style="margin-top: 12px; color: var(--text-muted); line-height: 1.6;">Welcome to FormatShift, your all-in-one local file processing utility. FormatShift allows you to perform essential image and PDF conversions directly in your browser. Because all processing happens locally on your device, your files are never uploaded to an external server, ensuring maximum privacy, security, and speed.</p>
+            
+            <h3 style="margin-top:32px;">Frequently Asked Questions</h3>
+            
+            <h4 style="margin-top:16px; font-weight: 600;">How do I convert Images to PDF?</h4>
+            <p style="margin-top: 8px; color: var(--text-muted); line-height: 1.5;">Simply select the "Image to PDF" tool, upload one or more image files (JPG or PNG), and click convert. If you upload a single image, our interactive cropper allows you to adjust it. If you upload multiple files, our tool will automatically merge your images into a single, high-quality PDF document in seconds.</p>
+            
+            <h4 style="margin-top:16px; font-weight: 600;">Is this tool really secure?</h4>
+            <p style="margin-top: 8px; color: var(--text-muted); line-height: 1.5;">Yes. FormatShift leverages HTML5 and advanced JavaScript to process files locally on your own computer. We do not store, view, or upload any of your personal files to the cloud.</p>
+            
+            <h4 style="margin-top:16px; font-weight: 600;">How do I reduce PDF file size?</h4>
+            <p style="margin-top: 8px; color: var(--text-muted); line-height: 1.5;">Select the "Compress PDF" tool and upload your large PDF. Our local engine will reduce the quality of embedded images and optimize the document structure to drastically shrink the file size.</p>
+        </section>
+
+        <!-- Footer -->
+        <footer style="margin-top: 48px; padding: 24px 0; text-align: center; color: var(--text-muted); font-size: 0.9rem; border-top: 1px solid var(--glass-border);">
+            <p>&copy; 2026 FormatShift. All rights reserved.</p>
+            <div style="margin-top: 12px;">
+                <a href="privacy.html" style="color: var(--primary); text-decoration: none; margin: 0 8px;">Privacy Policy</a>
+                <a href="terms.html" style="color: var(--primary); text-decoration: none; margin: 0 8px;">Terms of Service</a>
+                <a href="contact.html" style="color: var(--primary); text-decoration: none; margin: 0 8px;">Contact Us</a>
+            </div>
+        </footer>
     </div>
-</section>
 
-<section class="cta reveal">
-    <h2>Your Privacy Matters</h2>
-    <a href="secret-messenger.apk" download class="main-btn">
-        Download Secret Messenger
-    </a>
-</section>
+    <!-- Modals -->
+    <script>
+        pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
 
-<footer>
-    © 2026 Secret Messenger. All rights reserved.
-</footer>
-
-<script>
-function reveal(){
-    const reveals=document.querySelectorAll(".reveal");
-    for(let i=0;i<reveals.length;i++){
-        let windowHeight=window.innerHeight;
-        let top=reveals[i].getBoundingClientRect().top;
-        let visible=100;
-
-        if(top < windowHeight-visible){
-            reveals[i].classList.add("active");
+        // Theme Switcher & Persistence
+        const themeToggle = document.getElementById('themeToggle');
+        const sunIcon = document.getElementById('sunIcon');
+        const moonIcon = document.getElementById('moonIcon');
+        
+        function applyTheme(theme) {
+            document.documentElement.setAttribute('data-theme', theme);
+            localStorage.setItem('formatshift_theme', theme);
+            if (theme === 'dark') { sunIcon.style.display = 'none'; moonIcon.style.display = 'block'; }
+            else { sunIcon.style.display = 'block'; moonIcon.style.display = 'none'; }
         }
-    }
-}
-window.addEventListener("scroll",reveal);
-reveal();
-</script>
 
+        const savedTheme = localStorage.getItem('formatshift_theme') || 'light';
+        applyTheme(savedTheme);
+        
+        themeToggle.addEventListener('click', () => {
+            const currentTheme = document.documentElement.getAttribute('data-theme');
+            applyTheme(currentTheme === 'light' ? 'dark' : 'light');
+        });
+
+        // DOM Elements
+        const screens = { selection: document.getElementById('selectionScreen'), upload: document.getElementById('uploadScreen') };
+        const ui = {
+            title: document.getElementById('selectedToolTitle'), ext: document.getElementById('acceptedExt'),
+            uploadArea: document.getElementById('uploadArea'), fileInput: document.getElementById('fileInput'),
+            fileName: document.getElementById('fileName'), btn: document.getElementById('convertBtn'),
+            btnText: document.getElementById('convertBtnText'), loader: document.getElementById('btnLoader'),
+            status: document.getElementById('statusMessage'), gallery: document.getElementById('previewGalleryContainer'),
+            galleryGrid: document.getElementById('galleryGrid'), downloadAllBtn: document.getElementById('downloadAllBtn')
+        };
+        const settings = {
+            compress: document.getElementById('compressSettings'),
+            watermark: document.getElementById('watermarkSettings'), split: document.getElementById('splitSettings')
+        };
+        const inputs = {
+            targetKB: document.getElementById('targetSizeInput'), sizeText: document.getElementById('currentSizeText'),
+            watermarkText: document.getElementById('watermarkTextInput'), splitRange: document.getElementById('splitRangeInput')
+        };
+
+        let currentAction = null;
+        let currentFiles = [];
+        let generatedBlobs = [];
+
+        function hideAllSettings() { Object.values(settings).forEach(el => el.style.display = 'none'); }
+
+        function selectTool(action, title, acceptedExtensions, allowMultiple) {
+            currentAction = action; currentFiles = [];
+            ui.title.textContent = title;
+            ui.fileInput.accept = acceptedExtensions;
+            ui.fileInput.multiple = allowMultiple;
+            ui.ext.textContent = acceptedExtensions.replace(/\./g, '').replace(/,/g, '/').toUpperCase();
+            
+            ui.btnText.textContent = action === 'pdf2img' ? 'Generate Previews' : 'Convert Now';
+            ui.fileName.textContent = allowMultiple ? 'Drop multiple files here' : 'Drop a single file here';
+            
+            hideAllSettings();
+            if (action === 'compress_img') settings.compress.style.display = 'block';
+            if (action === 'watermark') settings.watermark.style.display = 'block';
+            if (action === 'split_pdf') settings.split.style.display = 'block';
+
+            ui.btn.style.display = 'none';
+            ui.gallery.style.display = 'none';
+            ui.galleryGrid.innerHTML = '';
+            ui.status.textContent = '';
+            
+            screens.selection.style.display = 'none';
+            screens.upload.style.display = 'block';
+        }
+
+        function goBack() { screens.selection.style.display = 'grid'; screens.upload.style.display = 'none'; currentAction = null; currentFiles = []; }
+
+        ui.uploadArea.addEventListener('click', () => ui.fileInput.click());
+        ui.uploadArea.addEventListener('dragover', (e) => { e.preventDefault(); ui.uploadArea.classList.add('dragover'); });
+        ui.uploadArea.addEventListener('dragleave', () => { ui.uploadArea.classList.remove('dragover'); });
+        ui.uploadArea.addEventListener('drop', (e) => {
+            e.preventDefault(); ui.uploadArea.classList.remove('dragover');
+            if (e.dataTransfer.files.length) handleFileSelect(e.dataTransfer.files);
+        });
+        ui.fileInput.addEventListener('change', (e) => {
+            if (e.target.files.length) handleFileSelect(e.target.files);
+        });
+
+        function formatBytes(bytes) {
+            if (bytes === 0) return '0 Bytes';
+            const k = 1024, sizes = ['Bytes', 'KB', 'MB', 'GB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+        }
+
+        function handleFileSelect(files) {
+            ui.status.textContent = ''; ui.gallery.style.display = 'none';
+            
+            // Clean up the allowed string (e.g. ".jpg,.jpeg,.png") to an array
+            const allowedStr = ui.fileInput.accept;
+            const allowed = allowedStr ? allowedStr.split(',').map(e => e.trim().toLowerCase()) : [];
+            
+            currentFiles = [];
+            let totalSize = 0;
+            
+            for(let i=0; i < files.length; i++) {
+                const parts = files[i].name.split('.');
+                const ext = parts.length > 1 ? '.' + parts.pop().toLowerCase() : '';
+                
+                if (allowedStr === '' || allowed.includes(ext)) {
+                    currentFiles.push(files[i]);
+                    totalSize += files[i].size;
+                }
+            }
+
+            if(!ui.fileInput.multiple && currentFiles.length > 1) {
+                currentFiles = [currentFiles[0]];
+                totalSize = currentFiles[0].size;
+            }
+
+            if (currentFiles.length === 0) {
+                ui.status.textContent = `No valid files found. Allowed: ${ui.ext.textContent}`;
+                ui.status.className = 'status-message status-error';
+                ui.btn.style.display = 'none';
+                return;
+            }
+
+            ui.fileName.textContent = currentFiles.length === 1 ? `Selected: ${currentFiles[0].name}` : `${currentFiles.length} files selected`;
+            ui.btn.style.display = 'flex';
+
+            if (currentAction === 'compress_img') inputs.sizeText.textContent = `Current Total Size: ${formatBytes(totalSize)}`;
+        }
+
+        function setLoading(isLoading) {
+            ui.btn.disabled = isLoading;
+            ui.btnText.style.display = isLoading ? 'none' : 'block';
+            ui.loader.style.display = isLoading ? 'block' : 'none';
+            if(isLoading) { ui.status.textContent = 'Processing...'; ui.status.className = 'status-message'; }
+        }
+
+        function downloadBlob(blob, filename) {
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a'); a.href = url; a.download = filename; a.click();
+            window.URL.revokeObjectURL(url);
+        }
+
+        const getBaseName = (filename) => filename.substring(0, filename.lastIndexOf('.'));
+        const getImageBlob = (canvas, mime, quality) => new Promise(r => canvas.toBlob(r, mime, quality));
+
+        function triggerConfetti() {
+            confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 } });
+        }
+
+        // --- Core Process Logic per File ---
+        async function processFile(file, action) {
+            const baseName = getBaseName(file.name);
+            const ext = file.name.split('.').pop().toLowerCase();
+
+            if (action === 'img2pdf') {
+                return new Promise(async (resolve, reject) => {
+                    // If batch converting multiple images, SKIP the manual cropper and instantly convert!
+                    if (currentFiles.length > 1) {
+                        try {
+                            const img = await loadImage(file);
+                            const canvas = document.createElement('canvas');
+                            canvas.width = img.width; canvas.height = img.height;
+                            const ctx = canvas.getContext('2d');
+                            ctx.fillStyle = '#FFFFFF'; ctx.fillRect(0, 0, canvas.width, canvas.height); 
+                            ctx.drawImage(img, 0, 0);
+                            resolve(canvas);
+                        } catch(e) { reject(e); }
+                        return;
+                    }
+
+                    // Only show the interactive Cropper modal if a SINGLE image is uploaded
+                    const cropperModal = document.getElementById('cropperModal');
+                    const cropperTitle = document.getElementById('cropperTitle');
+                    const cropperImage = document.getElementById('cropperImage');
+                    const rotateLeftBtn = document.getElementById('rotateLeftBtn');
+                    const rotateRightBtn = document.getElementById('rotateRightBtn');
+                    const confirmCropBtn = document.getElementById('confirmCropBtn');
+                    const cancelCropBtn = document.getElementById('cancelCropBtn');
+
+                    // Show filename in modal
+                    cropperTitle.textContent = `Crop & Tilt: ${file.name}`;
+                    
+                    // Carefully load image before showing cropper to ensure dimensions are known
+                    const url = URL.createObjectURL(file);
+                    const img = new Image();
+                    img.onload = () => {
+                        cropperImage.src = url;
+                        cropperModal.style.display = 'flex';
+
+                        let cropper;
+                        setTimeout(() => {
+                            cropper = new Cropper(cropperImage, {
+                                viewMode: 1, dragMode: 'crop', autoCropArea: 1, restore: false,
+                                guides: true, center: true, highlight: false, cropBoxMovable: true, cropBoxResizable: true, toggleDragModeOnDblclick: false,
+                            });
+                        }, 50);
+
+                        const cleanup = () => {
+                            if (cropper) { cropper.destroy(); cropper = null; }
+                            cropperModal.style.display = 'none';
+                            URL.revokeObjectURL(url);
+                            
+                            // Remove listeners to prevent memory leaks
+                            rotateLeftBtn.onclick = null;
+                            rotateRightBtn.onclick = null;
+                            cancelCropBtn.onclick = null;
+                            confirmCropBtn.onclick = null;
+                        };
+
+                        rotateLeftBtn.onclick = () => { if(cropper) cropper.rotate(-90); };
+                        rotateRightBtn.onclick = () => { if(cropper) cropper.rotate(90); };
+
+                        cancelCropBtn.onclick = () => {
+                            cleanup();
+                            reject(new Error("Cropping cancelled by user."));
+                        };
+
+                        confirmCropBtn.onclick = () => {
+                            const canvas = cropper.getCroppedCanvas();
+                            if (!canvas) {
+                                cleanup();
+                                reject(new Error("Could not crop image."));
+                                return;
+                            }
+                            cleanup();
+                            resolve(canvas);
+                        };
+                    };
+                    img.onerror = () => {
+                        URL.revokeObjectURL(url);
+                        reject(new Error("Failed to load image."));
+                    };
+                    img.src = url;
+                });
+            }
+
+            else if (action === 'compress_img') {
+                const targetKB = parseFloat(inputs.targetKB.value);
+                if(isNaN(targetKB)) throw new Error("Invalid target size");
+                const targetBytes = targetKB * 1024;
+                
+                const img = await loadImage(file);
+                const canvas = document.createElement('canvas');
+                canvas.width = img.width; canvas.height = img.height;
+                const ctx = canvas.getContext('2d');
+                ctx.fillStyle = '#FFFFFF'; ctx.fillRect(0, 0, canvas.width, canvas.height); ctx.drawImage(img, 0, 0);
+
+                let minQ = 0.01, maxQ = 1.0, bestBlob = null, attempts = 0;
+                while (minQ <= maxQ && attempts < 10) {
+                    let midQ = (minQ + maxQ) / 2;
+                    let blob = await getImageBlob(canvas, 'image/jpeg', midQ);
+                    if (blob.size <= targetBytes) { bestBlob = blob; minQ = midQ + 0.05; } else { maxQ = midQ - 0.05; }
+                    attempts++;
+                }
+                if (!bestBlob) bestBlob = await getImageBlob(canvas, 'image/jpeg', 0.01);
+                downloadBlob(bestBlob, `${baseName}_compressed.jpg`);
+            }
+
+            else if (action === 'watermark') {
+                const text = inputs.watermarkText.value || "WATERMARK";
+                if (ext === '.pdf') {
+                    const pdfDoc = await PDFLib.PDFDocument.load(await file.arrayBuffer());
+                    const pages = pdfDoc.getPages();
+                    const { rgb, degrees } = PDFLib;
+                    pages.forEach(page => {
+                        const { width, height } = page.getSize();
+                        page.drawText(text, { x: width/2 - 100, y: height/2, size: 50, color: rgb(0.5, 0.5, 0.5), opacity: 0.5, rotate: degrees(45) });
+                    });
+                    const pdfBytes = await pdfDoc.save();
+                    downloadBlob(new Blob([pdfBytes], { type: 'application/pdf' }), `${baseName}_watermarked.pdf`);
+                } else {
+                    const img = await loadImage(file);
+                    const canvas = document.createElement('canvas');
+                    canvas.width = img.width; canvas.height = img.height;
+                    const ctx = canvas.getContext('2d');
+                    ctx.drawImage(img, 0, 0);
+                    ctx.font = `${Math.floor(img.width/10)}px Arial`;
+                    ctx.fillStyle = 'rgba(128, 128, 128, 0.5)';
+                    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+                    ctx.translate(canvas.width/2, canvas.height/2);
+                    ctx.rotate(-Math.PI/4);
+                    ctx.fillText(text, 0, 0);
+                    const blob = await getImageBlob(canvas, ext === '.png' ? 'image/png' : 'image/jpeg', 0.95);
+                    downloadBlob(blob, `${baseName}_watermarked.${ext === '.png' ? 'png' : 'jpg'}`);
+                }
+            }
+
+            else if (action === 'split_pdf') {
+                const rangeStr = inputs.splitRange.value;
+                if(!rangeStr) throw new Error("Provide a page range");
+                const srcDoc = await PDFLib.PDFDocument.load(await file.arrayBuffer());
+                const newDoc = await PDFLib.PDFDocument.create();
+                
+                const pagesToKeep = new Set();
+                rangeStr.split(',').forEach(part => {
+                    if(part.includes('-')) {
+                        let [s, e] = part.split('-');
+                        for(let i=parseInt(s); i<=parseInt(e); i++) pagesToKeep.add(i-1);
+                    } else {
+                        pagesToKeep.add(parseInt(part)-1);
+                    }
+                });
+                
+                const validIndices = Array.from(pagesToKeep).filter(i => i >= 0 && i < srcDoc.getPageCount());
+                if(validIndices.length === 0) throw new Error("Invalid page range");
+                
+                const copiedPages = await newDoc.copyPages(srcDoc, validIndices);
+                copiedPages.forEach(p => newDoc.addPage(p));
+                const pdfBytes = await newDoc.save();
+                downloadBlob(new Blob([pdfBytes], { type: 'application/pdf' }), `${baseName}_split.pdf`);
+            }
+
+            else if (action === 'docx2txt') {
+                const result = await mammoth.extractRawText({ arrayBuffer: await file.arrayBuffer() });
+                downloadBlob(new Blob([result.value], { type: "text/plain;charset=utf-8" }), `${baseName}.txt`);
+            }
+            else if (action === 'txt2docx') {
+                const text = await file.text();
+                const paragraphs = text.split('\n').map(line => new docx.Paragraph({ children: [new docx.TextRun(line)] }));
+                const doc = new docx.Document({ sections: [{ children: paragraphs }] });
+                downloadBlob(await docx.Packer.toBlob(doc), `${baseName}.docx`);
+            }
+            else if (action === 'pdf2txt' || action === 'pdf2docx') {
+                const pdf = await pdfjsLib.getDocument({data: await file.arrayBuffer()}).promise;
+                let fullText = '';
+                for (let i = 1; i <= pdf.numPages; i++) {
+                    const page = await pdf.getPage(i);
+                    const content = await page.getTextContent();
+                    fullText += content.items.map(item => item.str).join(' ') + '\n';
+                }
+                if (action === 'pdf2txt') downloadBlob(new Blob([fullText], { type: "text/plain;charset=utf-8" }), `${baseName}.txt`);
+                else downloadBlob(await docx.Packer.toBlob(new docx.Document({ sections: [{ children: fullText.split('\n').map(line => new docx.Paragraph({ children: [new docx.TextRun(line)] })) }] })), `${baseName}.docx`);
+            }
+            else if (action === 'compress_pdf') {
+                const pdfDoc = await PDFLib.PDFDocument.load(await file.arrayBuffer());
+                pdfDoc.setTitle(''); pdfDoc.setAuthor('');
+                downloadBlob(new Blob([await pdfDoc.save({ useObjectStreams: false })], { type: 'application/pdf' }), `${baseName}_compressed.pdf`);
+            }
+            else if (action === 'img2png' || action === 'img2jpeg') {
+                const img = await loadImage(file);
+                const canvas = document.createElement('canvas');
+                canvas.width = img.width; canvas.height = img.height;
+                const ctx = canvas.getContext('2d');
+                if(action === 'img2jpeg') { ctx.fillStyle = '#FFFFFF'; ctx.fillRect(0, 0, canvas.width, canvas.height); }
+                ctx.drawImage(img, 0, 0);
+                const extTarget = action === 'img2png' ? 'png' : 'jpeg';
+                const blob = await getImageBlob(canvas, `image/${extTarget}`, 0.95);
+                downloadBlob(blob, `${baseName}.${extTarget}`);
+            }
+        }
+
+        function loadImage(file) {
+            return new Promise((resolve, reject) => {
+                const img = new Image();
+                img.onload = () => resolve(img);
+                img.onerror = reject;
+                img.src = URL.createObjectURL(file);
+            });
+        }
+
+        // --- Main Convert Click Handler ---
+        ui.btn.addEventListener('click', async () => {
+            if (currentFiles.length === 0 || !currentAction) return;
+            setLoading(true);
+            let successCount = 0;
+            
+            try {
+                if (currentAction === 'merge_pdf') {
+                    if(currentFiles.length < 2) throw new Error("Select at least 2 PDFs to merge.");
+                    const mergedPdf = await PDFLib.PDFDocument.create();
+                    for (const file of currentFiles) {
+                        const pdfDoc = await PDFLib.PDFDocument.load(await file.arrayBuffer());
+                        const copiedPages = await mergedPdf.copyPages(pdfDoc, pdfDoc.getPageIndices());
+                        copiedPages.forEach((page) => mergedPdf.addPage(page));
+                    }
+                    const pdfBytes = await mergedPdf.save();
+                    downloadBlob(new Blob([pdfBytes], { type: 'application/pdf' }), `Merged_Document.pdf`);
+                    successCount = currentFiles.length;
+                } 
+                else if (currentAction === 'pdf2img') {
+                    ui.gallery.style.display = 'block'; ui.galleryGrid.innerHTML = ''; generatedBlobs = [];
+                    
+                    // Process all uploaded PDFs
+                    for (const file of currentFiles) {
+                        const baseName = getBaseName(file.name);
+                        ui.status.textContent = `Generating preview for ${file.name}...`;
+                        const pdf = await pdfjsLib.getDocument({data: await file.arrayBuffer()}).promise;
+                        
+                        for (let i = 1; i <= pdf.numPages; i++) {
+                            const page = await pdf.getPage(i);
+                            const viewport = page.getViewport({scale: 1.5});
+                            const canvas = document.createElement('canvas'); const ctx = canvas.getContext('2d');
+                            canvas.height = viewport.height; canvas.width = viewport.width;
+                            await page.render({canvasContext: ctx, viewport: viewport}).promise;
+                            
+                            const blob = await getImageBlob(canvas, 'image/png', 1.0);
+                            // Prefix with filename if multiple PDFs, otherwise just page number
+                            const pageName = currentFiles.length > 1 ? `${baseName}_page_${i}.png` : (pdf.numPages > 1 ? `${baseName}_page_${i}.png` : `${baseName}.png`);
+                            generatedBlobs.push({blob, name: pageName});
+                            
+                            const itemDiv = document.createElement('div'); itemDiv.className = 'gallery-item';
+                            const imgElem = document.createElement('img'); imgElem.src = URL.createObjectURL(blob);
+                            const btnElem = document.createElement('button'); btnElem.textContent = `Download Page ${i}`;
+                            btnElem.onclick = () => downloadBlob(blob, pageName);
+                            
+                            itemDiv.appendChild(imgElem); itemDiv.appendChild(btnElem); ui.galleryGrid.appendChild(itemDiv);
+                        }
+                    }
+                    
+                    if (generatedBlobs.length > 1) {
+                        ui.downloadAllBtn.style.display = 'block';
+                        ui.downloadAllBtn.onclick = async () => { for (const item of generatedBlobs) { downloadBlob(item.blob, item.name); await new Promise(r => setTimeout(r, 200)); } };
+                    }
+                    ui.status.textContent = 'Preview generated! Click a button below to download.';
+                    ui.status.className = 'status-message status-success';
+                    setLoading(false);
+                    return; 
+                }
+                else if (currentAction === 'img2pdf') {
+                    let pdfDoc = null;
+                    for (const file of currentFiles) {
+                        try {
+                            const canvas = await processFile(file, currentAction);
+                            const orientation = canvas.width > canvas.height ? "landscape" : "portrait";
+                            const imgData = canvas.toDataURL('image/jpeg', 1.0);
+                            
+                            if (!pdfDoc) {
+                                pdfDoc = new window.jspdf.jsPDF({ orientation, unit: "px", format: [canvas.width, canvas.height] });
+                                pdfDoc.addImage(imgData, 'JPEG', 0, 0, canvas.width, canvas.height);
+                            } else {
+                                pdfDoc.addPage([canvas.width, canvas.height], orientation);
+                                pdfDoc.addImage(imgData, 'JPEG', 0, 0, canvas.width, canvas.height);
+                            }
+                            successCount++;
+                            await new Promise(r => setTimeout(r, 250)); 
+                        } catch (e) {
+                            console.error(e);
+                            if(e.message === "Cropping cancelled by user.") break;
+                            ui.status.textContent = `Error on ${file.name}: ${e.message}`; 
+                            ui.status.className = 'status-message status-error'; 
+                        }
+                    }
+                    if (pdfDoc && successCount > 0) {
+                        const baseName = getBaseName(currentFiles[0].name);
+                        pdfDoc.save(currentFiles.length === 1 ? `${baseName}_cropped.pdf` : `Combined_Images.pdf`);
+                    }
+                }
+                else {
+                    for (const file of currentFiles) {
+                        try {
+                            await processFile(file, currentAction);
+                            successCount++;
+                            await new Promise(r => setTimeout(r, 250)); 
+                        } catch (e) { 
+                            console.error(e); 
+                            ui.status.textContent = `Error on ${file.name}: ${e.message}`; 
+                            ui.status.className = 'status-message status-error'; 
+                            
+                            // For cropper cancellation, stop processing remaining files
+                            if(e.message === "Cropping cancelled by user.") break;
+                        }
+                    }
+                }
+
+                if (successCount > 0) {
+                    ui.status.textContent = `Successfully processed ${successCount} file(s)!`;
+                    ui.status.className = 'status-message status-success';
+                    triggerConfetti();
+                } else {
+                    if(!ui.status.textContent.includes('Error')) ui.status.textContent = 'Conversion failed.';
+                    ui.status.className = 'status-message status-error';
+                }
+            } catch (error) {
+                console.error(error);
+                ui.status.textContent = error.message || 'An error occurred.';
+                ui.status.className = 'status-message status-error';
+            }
+            setLoading(false);
+        });
+
+    </script>
 </body>
 </html>
